@@ -1,0 +1,32 @@
+schema_version: 1
+target:
+  language: python
+  procedure: demo_procs.geometry:scale_shapes
+  source: src/demo_procs/geometry.py
+description: Scales every coordinate of a list of shapes.
+tags: [geometry]
+
+x-shapes: &shapes
+  - {layer: M1, bbox: [[0, 0], [1, 1]], net: VSS}
+  - {layer: M2, bbox: [[0, 0], [2, 2]]}
+
+cases:
+  - id: doubles_coordinates
+    args: [{value: *shapes}, 2]
+    expect:
+      returns:
+        length: 2
+        subset: [{layer: M1, bbox: [[0, 0], [2, 2]]}]
+        schema:
+          type: array
+          items: {type: object, required: [layer, bbox]}
+
+  - id: keeps_other_keys
+    args: [{value: *shapes}, 0.5]
+    expect:
+      returns: {subset: [{net: VSS}]}
+
+  - id: zero_factor
+    args: [{value: *shapes}, 0]
+    expect:
+      error: {type: ValueError, match: positive}

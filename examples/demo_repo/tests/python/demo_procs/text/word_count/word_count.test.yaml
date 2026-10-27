@@ -1,0 +1,31 @@
+schema_version: 1
+target:
+  language: python
+  procedure: demo_procs.text:word_count
+  source: src/demo_procs/text.py
+description: Counts lines, words and characters of a text file.
+tags: [text, smoke]
+cases:
+  - id: three_lines
+    description: Typical multi-line file
+    args: [{file: data/sample.txt}]
+    expect:
+      returns:
+        value: {lines: 3, words: 9, chars: 51}
+
+  - id: empty_file
+    args: [{file: data/empty.txt}]
+    expect:
+      returns: {value: {lines: 0, words: 0, chars: 0}}
+
+  - id: path_object
+    description: Accepts a pathlib.Path as well as a str
+    args: [{file: data/sample.txt, as: path}]
+    expect:
+      returns: {subset: {lines: 3}}
+
+  - id: missing_file
+    description: A missing input raises instead of returning zeros
+    args: [{out: does_not_exist.txt}]
+    expect:
+      error: {type: OSError, match: "No such file"}

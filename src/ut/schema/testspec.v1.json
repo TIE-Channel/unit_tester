@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ut-engine:schema:testspec:v1",
+  "title": "ut test spec, version 1",
+  "description": "One file per procedure under test. Each case calls the procedure with arguments and checks what it returns, raises, prints and writes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "target", "cases"],
+  "patternProperties": {
+    "^x-": {"description": "Free-form extension keys, e.g. to hold YAML anchors shared by several cases."}
+  },
+  "properties": {
+    "schema_version": {"const": 1},
+    "target": {"$ref": "#/$defs/target"},
+    "description": {"type": "string"},
+    "owner": {"type": "string"},
+    "tags": {"$ref": "#/$defs/tags"},
+    "skip": {"$ref": "#/$defs/reason"},
+    "xfail": {"$ref": "#/$defs/reason"},
+    "timeout": {"$ref": "#/$defs/timeout"},
+    "setup": {"$ref": "#/$defs/setup"},
+    "mocks": {"$ref": "#/$defs/mocks"},
+    "stubs": {"$ref": "#/$defs/stubs"},
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/case"}
+    }
+  },
+  "$defs": {
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["language", "procedure"],
+      "properties": {
+        "language": {"enum": ["python", "skill"]},
+        "procedure": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Python: 'package.module:function' (or 'module:Class.method'). SKILL: the procedure name."
+        },
+        "source": {"$ref": "#/$defs/relpath", "description": "File that defines the procedure, relative to the repository root."}
+      }
+    },
+    "tags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+      "description": "Become pytest markers, so suites can select them with -m expressions."
+    },
+    "reason": {"type": "string", "minLength": 1},
+    "timeout": {"type": "number", "exclusiveMinimum": 0, "description": "Seconds."},
+    "relpath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![/\\\\])(?![A-Za-z]:)[^\\\\]*$",
+      "description": "Relative path with forward slashes."
+    },
+    "regex": {"type": "string", "description": "Python regular expression, matched with re.search."},
+    "regexList": {"type": "array", "items": {"$ref": "#/$defs/regex"}},
+    "stringList": {"type": "array", "items": {"type": "string"}},
+    "setup": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "load": {"type": "array", "items": {"$ref": "#/$defs/relpath"}, "description": "SKILL only: files to load before the cases run."}
+      }
+    },
+    "mocks": {
+      "type": "object",
+      "description": "Python only. Key: dotted path to replace during the case, e.g. 'mypkg.reports.getpass.getuser'.",
+      "propertyNames": {"pattern": "^[A-Za-z_][\\w.]*(:[A-Za-z_][\\w.]*)?$"},
+      "additionalProperties": {"$ref": "#/$defs/mock"}
+    },
+    "mock": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "maxProperties": 1,
+      "properties": {
+        "return": {"description": "Replace with a callable that returns this value."},
+        "raises": {"type": "string", "description": "Replace with a callable that raises, e.g. 'OSError: disk full' or 'mypkg.errors:MyError'."},
+        "value": {"description": "Replace the attribute itself with this value."}
+      }
+    },
+    "stubs": {
+      "type": "object",
+      "description": "SKILL only. Key: procedure name; value: SKILL expression used as its body while the case runs.",
+      "propertyNames": {"pattern": "^[A-Za-z_][\\w.]*$"},
+      "additionalProperties": {"type": "string"}
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "expect"],
+      "patternProperties": {"^x-": {}},
+      "properties": {
+        "id": {"type": "string", "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]*$"},
+        "description": {"type": "string"},
+        "tags": {"$ref": "#/$defs/tags"},
+        "skip": {"$ref": "#/$defs/reason"},
+        "xfail": {"$ref": "#/$defs/reason"},
+        "timeout": {"$ref": "#/$defs/timeout"},
+        "mocks": {"$ref": "#/$defs/mocks"},
+        "stubs": {"$ref": "#/$defs/stubs"},
+        "args": {"type": "array", "items": {"$ref": "#/$defs/arg"}},
+        "kwargs": {
+          "type": "object",
+          "propertyNames": {"pattern": "^[A-Za-z_]\\w*$"},
+          "additionalProperties": {"$ref": "#/$defs/arg"}
+        },
+        "expect": {"$ref": "#/$defs/expect"}
+      }
+    },
+    "arg": {
+      "description": "A literal scalar, a list of args, or a token object. Literal mappings must be wrapped as {value: ...}.",
+      "anyOf": [
+        {"type": ["string", "number", "boolean", "null"]},
+        {"type": "array", "items": {"$ref": "#/$defs/arg"}},
+        {"$ref": "#/$defs/token"}
+      ]
+    },
+    "pathAs": {"enum": ["str", "path"], "description": "Python only: pass a str (default) or a pathlib.Path."},
+    "token": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false, "required": ["file"],
+          "properties": {"file": {"$ref": "#/$defs/relpath"}, "as": {"$ref": "#/$defs/pathAs"}},
+          "description": "Copy this file (relative to the spec) into the sandbox and pass its absolute path."
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["dir"],
+          "properties": {"dir": {"$ref": "#/$defs/relpath"}, "as": {"$ref": "#/$defs/pathAs"}},
+          "description": "Copy this directory tree (relative to the spec) into the sandbox and pass its absolute path."
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["out"],
+          "properties": {"out": {"$ref": "#/$defs/relpath"}, "as": {"$ref": "#/$defs/pathAs"}},
+          "description": "Pass the absolute path of a not-yet-existing file in the sandbox."
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["tmpdir"],
+          "properties": {"tmpdir": {"$ref": "#/$defs/relpath"}, "as": {"$ref": "#/$defs/pathAs"}},
+          "description": "Create an empty directory in the sandbox and pass its absolute path."
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["value"],
+          "properties": {"value": {}},
+          "description": "Pass this value verbatim (use it for mappings)."
+        }
+      ]
+    },
+    "expect": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "returns": {"$ref": "#/$defs/returns"},
+        "error": {"$ref": "#/$defs/error"},
+        "stdout": {"$ref": "#/$defs/text"},
+        "stderr": {"$ref": "#/$defs/text"},
+        "files": {"type": "array", "items": {"$ref": "#/$defs/file"}},
+        "files_absent": {"type": "array", "items": {"$ref": "#/$defs/relpath"}},
+        "custom": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][\\w.]*:[A-Za-z_]\\w*$",
+          "description": "'module:function' called as function(outcome=, case=, sandbox=); fails the case by raising AssertionError or returning False or a message."
+        }
+      }
+    },
+    "returns": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "description": "Every listed check must hold.",
+      "properties": {
+        "value": {"description": "Exact equality (1 == 1.0, but true != 1)."},
+        "approx": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["value"],
+          "properties": {
+            "value": {},
+            "rel": {"type": "number", "minimum": 0},
+            "abs": {"type": "number", "minimum": 0}
+          }
+        },
+        "regex": {"$ref": "#/$defs/regex"},
+        "unordered": {"type": "array", "description": "Same elements, any order."},
+        "subset": {"description": "Mappings: listed keys match recursively. Lists: each listed element matches some actual element."},
+        "type": {"enum": ["null", "boolean", "integer", "number", "string", "array", "object"]},
+        "length": {"type": "integer", "minimum": 0},
+        "schema": {"type": "object", "description": "JSON Schema the returned value must satisfy."},
+        "golden": {"$ref": "#/$defs/relpath", "description": "JSON file with the expected value; written by `ut bless`."}
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {"type": "string", "description": "Exception class name; base classes match too (OSError matches FileNotFoundError)."},
+        "match": {"$ref": "#/$defs/regex"}
+      }
+    },
+    "text": {
+      "anyOf": [
+        {"type": "string", "description": "Exact text."},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "equals": {"type": "string"},
+            "contains": {"$ref": "#/$defs/stringList"},
+            "not_contains": {"$ref": "#/$defs/stringList"},
+            "matches": {"$ref": "#/$defs/regexList"},
+            "empty": {"type": "boolean"},
+            "golden": {"$ref": "#/$defs/relpath"},
+            "ignore": {"$ref": "#/$defs/regexList"}
+          }
+        }
+      ]
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": {"$ref": "#/$defs/relpath", "description": "Relative to the sandbox."},
+        "golden": {"$ref": "#/$defs/relpath", "description": "Relative to the spec; written by `ut bless`."},
+        "compare": {"enum": ["text", "json", "binary"], "default": "text"},
+        "ignore": {"$ref": "#/$defs/regexList", "description": "Text only: matches are masked on both sides before comparing."},
+        "contains": {"$ref": "#/$defs/stringList"},
+        "not_contains": {"$ref": "#/$defs/stringList"},
+        "matches": {"$ref": "#/$defs/regexList"}
+      }
+    }
+  }
+}

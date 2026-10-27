@@ -1,0 +1,7 @@
+# Text files use LF in the repository and in every working copy, so a
+# Windows checkout matches what Linux CI sees.
+* text=auto eol=lf
+
+# Test inputs and expected outputs must stay byte-exact on every platform.
+**/tests/**/data/** -text
+**/tests/**/golden/** -text

@@ -1,0 +1,28 @@
+schema_version: 1
+target:
+  language: python
+  procedure: demo_procs.text:write_report
+  source: src/demo_procs/text.py
+description: Writes a word-frequency report and returns the number of distinct words.
+tags: [text, reports]
+mocks:
+  # The report header names the user; pin it so the golden file is stable.
+  demo_procs.text.getpass.getuser: {return: jenkins}
+cases:
+  - id: frequencies
+    args: [{file: data/words.txt}, {out: out/report.txt}]
+    kwargs: {title: Demo report}
+    expect:
+      returns: {value: 5}
+      stdout: {contains: ["wrote 5 words"]}
+      files:
+        - path: out/report.txt
+          golden: golden/frequencies/report.txt
+          ignore: ['(?<=Generated on )\d{4}-\d\d-\d\d \d\d:\d\d:\d\d']
+
+  - id: missing_source
+    description: Fails before creating the report
+    args: [{out: nothing.txt}, {out: out/report.txt}]
+    expect:
+      error: {type: FileNotFoundError}
+      files_absent: [out/report.txt]

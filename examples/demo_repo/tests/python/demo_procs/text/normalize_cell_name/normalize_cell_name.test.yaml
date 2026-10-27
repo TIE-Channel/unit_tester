@@ -1,0 +1,30 @@
+schema_version: 1
+target:
+  language: python
+  procedure: demo_procs.text:normalize_cell_name
+  source: src/demo_procs/text.py
+description: Puts a cell name in canonical form (trimmed, lower case, underscores).
+tags: [text, smoke]
+cases:
+  - id: already_canonical
+    args: [inv_x1]
+    expect: {returns: {value: inv_x1}}
+
+  - id: mixed_case_and_spaces
+    args: ["  NAND2   X4 "]
+    expect: {returns: {value: nand2_x4}}
+
+  - id: on_stays_a_string
+    description: ut reads YAML 1.2 style, so ON is a string, not a boolean
+    args: [ON]
+    expect: {returns: {value: "on"}}
+
+  - id: blank
+    args: ["   "]
+    expect:
+      error: {type: ValueError, match: empty}
+
+  - id: not_a_string
+    args: [42]
+    expect:
+      error: {type: TypeError, match: "not int"}

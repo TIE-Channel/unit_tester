@@ -1,0 +1,20 @@
+# ut configuration for this repository. Paths are relative to this file.
+
+[ut]
+tests = ["tests"]          # where specs (and hand-written pytest tests) live
+out_dir = "ut-out"         # case sandboxes; keep it out of version control
+keep_sandbox = "failed"    # failed | always | never
+
+[python]
+# Prepended to sys.path for the code under test and for custom checks.
+paths = ["src", "tests/support"]
+
+# Named selections for `ut run --suite NAME`.
+[suites]
+smoke = { markers = "smoke" }
+python = { languages = ["python"] }
+nightly = {}
+
+[layout]
+# Where `ut new` puts specs. Changing it does not move existing specs.
+spec_path = "{tests}/{language}/{area}/{name}/{name}.test.yaml"

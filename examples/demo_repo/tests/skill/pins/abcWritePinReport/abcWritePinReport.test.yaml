@@ -1,0 +1,30 @@
+# SKILL spec in the same format as the Python ones. In Phase 0 it is validated
+# and listed, and `ut run` reports it as skipped; the Virtuoso worker that
+# executes it arrives in Phase 1 (the procedure source is not part of the demo).
+schema_version: 1
+target:
+  language: skill
+  procedure: abcWritePinReport
+  source: skill/pins/abcPins.il
+description: Writes a pin report for a LEF macro and returns the pin names, sorted.
+tags: [pins]
+setup:
+  load: [skill/pins/abcPins.il]
+stubs:
+  hiDisplayForm: "t"   # never open UI forms in batch runs
+cases:
+  - id: simple_lef
+    args: [{file: data/simple.lef}, {out: report.txt}, VDD]
+    kwargs: {sorted: t}
+    expect:
+      returns: {value: [A, B, VDD]}
+      files:
+        - path: report.txt
+          golden: golden/simple_lef/report.txt
+          ignore: ['^# Generated on .*']
+
+  - id: missing_lef
+    args: [{out: nope.lef}, {out: report.txt}, VDD]
+    expect:
+      error: {match: "cannot open"}
+      files_absent: [report.txt]

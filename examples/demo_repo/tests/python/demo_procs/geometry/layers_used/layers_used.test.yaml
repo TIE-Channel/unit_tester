@@ -1,0 +1,24 @@
+schema_version: 1
+target:
+  language: python
+  procedure: demo_procs.geometry:layers_used
+  source: src/demo_procs/geometry.py
+description: Distinct layers used by a list of shapes.
+tags: [geometry]
+
+# x- keys are ignored by ut; they hold YAML anchors shared by several cases.
+x-shapes: &shapes
+  - {layer: M1, bbox: [[0, 0], [1, 1]]}
+  - {layer: M2, bbox: [[0, 0], [2, 2]]}
+  - {layer: M1, bbox: [[5, 5], [6, 6]]}
+
+cases:
+  - id: duplicates_collapse
+    description: A set comes back as a list, so compare without order
+    args: [{value: *shapes}]
+    expect:
+      returns: {unordered: [M2, M1], length: 2}
+
+  - id: no_shapes
+    args: [[]]
+    expect: {returns: {value: []}}

@@ -1,0 +1,20 @@
+schema_version: 1
+target:
+  language: python
+  procedure: demo_procs.geometry:bbox_area
+  source: src/demo_procs/geometry.py
+description: Area of a bounding box.
+tags: [geometry, smoke]
+cases:
+  - id: unit_square
+    args: [[[0, 0], [1, 1]]]
+    expect: {returns: {value: 1}}
+
+  - id: floating_point
+    description: 0.1 * 0.3 is not exactly 0.03 in binary floating point, so compare approximately
+    args: [[[0.0, 0.0], [0.1, 0.3]]]
+    expect: {returns: {approx: {value: 0.03, rel: 1e-9}}}
+
+  - id: reversed_corners
+    args: [[[2, 3], [0, 0]]]
+    expect: {returns: {value: 6, type: integer}}

@@ -1,0 +1,21 @@
+schema_version: 1
+target:
+  language: python
+  procedure: demo_procs.geometry:write_shapes_json
+  source: src/demo_procs/geometry.py
+description: Writes shapes grouped by layer as JSON and returns the shape count per layer.
+tags: [geometry, reports]
+
+x-shapes: &shapes
+  - {layer: M1, bbox: [[0, 0], [1, 1]]}
+  - {layer: M2, bbox: [[0, 0], [2, 2]]}
+  - {layer: M1, bbox: [[5, 5], [6, 6]]}
+
+cases:
+  - id: grouped_by_layer
+    args: [{value: *shapes}, {out: shapes.json}]
+    expect:
+      returns: {golden: golden/grouped_by_layer/returns.json}
+      files:
+        - {path: shapes.json, compare: json, golden: golden/grouped_by_layer/shapes.json}
+      custom: demo_checks:every_layer_has_boxes

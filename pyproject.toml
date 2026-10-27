@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ut-engine"
+version = "0.1.0"
+description = "Declarative unit tests for Python and Cadence SKILL procedures, built on pytest"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pytest>=7.0",
+    "PyYAML>=5.4",
+    "jsonschema>=4.0",
+    "tomli>=1.1; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+parallel = ["pytest-xdist>=3.0"]
+
+[project.scripts]
+ut = "ut.cli:main"
+
+# Registers the spec collector with pytest, so plain `pytest` (and IDE test
+# explorers) pick up *.test.yaml files too.
+[project.entry-points.pytest11]
+ut = "ut.plugin"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+ut = ["schema/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = [".*", "__pycache__"]

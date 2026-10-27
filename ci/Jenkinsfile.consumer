@@ -1,0 +1,87 @@
+// Jenkins pipeline for a repository whose procedures are tested with ut.
+// Copy it to that repository's root as `Jenkinsfile` and adjust the TODOs.
+//
+// ut exit codes: 0 passed, 1 test failures, 2 spec/config error, 3 infrastructure error.
+// Test failures mark the build UNSTABLE (the test report shows which cases);
+// spec and infrastructure errors fail it, because then the results cannot be trusted.
+
+pipeline {
+    agent none
+
+    parameters {
+        string(name: 'UT_ARGS', defaultValue: '',
+               description: 'Extra `ut run` options, e.g. "--suite smoke" or "-m \'not slow\'"')
+    }
+
+    environment {
+        // TODO: where the engine is installed from. Pin a tag so builds are reproducible.
+        UT_ENGINE = 'ut-engine[parallel] @ git+https://git.example.com/tools/unit_tester.git@v0.1.0'
+    }
+
+    options {
+        timeout(time: 60, unit: 'MINUTES')
+    }
+
+    stages {
+        stage('Validate specs') {
+            agent { label 'linux' }  // TODO: any agent with python3 >= 3.9
+            steps {
+                setupUt()
+                runUt('validate')
+            }
+        }
+
+        stage('Unit tests') {
+            parallel {
+                stage('Python') {
+                    agent { label 'linux' }  // TODO
+                    steps {
+                        setupUt()
+                        runUt("run --lang python -n auto --junit reports/ut-python.xml ${params.UT_ARGS}")
+                    }
+                    post {
+                        always { publishUt('reports/ut-python.xml') }
+                    }
+                }
+
+                // Phase 1: enable once the SKILL adapter exists. Runs on agents
+                // with Virtuoso installed and licences available.
+                // stage('SKILL') {
+                //     agent { label 'virtuoso' }  // TODO
+                //     steps {
+                //         setupUt()
+                //         runUt("run --lang skill --junit reports/ut-skill.xml ${params.UT_ARGS}")
+                //     }
+                //     post {
+                //         always { publishUt('reports/ut-skill.xml') }
+                //     }
+                // }
+            }
+        }
+    }
+}
+
+def setupUt() {
+    sh '''
+        python3 -m venv .ut-venv
+        .ut-venv/bin/pip install --quiet --upgrade pip
+        .ut-venv/bin/pip install --quiet "$UT_ENGINE"
+    '''
+}
+
+def runUt(String args) {
+    int rc = sh(script: ".ut-venv/bin/ut ${args}", returnStatus: true)
+    if (rc == 1) {
+        unstable('ut: test failures, see the test report')
+    } else if (rc == 2) {
+        error('ut: invalid spec or configuration (exit 2), see the console log')
+    } else if (rc != 0) {
+        error("ut: infrastructure error (exit ${rc}), see the console log")
+    }
+}
+
+def publishUt(String report) {
+    junit testResults: report, allowEmptyResults: true
+    // Sandboxes of failed cases: their inputs, outputs and _ut_result.json.
+    archiveArtifacts artifacts: 'ut-out/sandbox/**', allowEmptyArchive: true
+}

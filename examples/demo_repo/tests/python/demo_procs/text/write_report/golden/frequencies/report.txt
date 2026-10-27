@@ -1,0 +1,9 @@
+# Demo report
+# Generated on 2026-10-27 20:46:11 by jenkins
+# Source: <sandbox>/words.txt
+
+red          3
+green        2
+blue         1
+purple       1
+yellow       1
