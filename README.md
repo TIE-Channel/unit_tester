@@ -14,7 +14,7 @@ Phase 1 (see [Roadmap](#roadmap)).
 ## Quick start
 
 ```bash
-pip install "ut-engine[parallel] @ git+<this repository>"   # or: pip install -e .  for development
+pip install "ut-engine[parallel] @ git+https://github.com/TIE-Channel/unit_tester.git@v0.1.0"
 cd <your repository>
 ut new python mypkg.reports:write_report      # creates tests/python/mypkg/reports/write_report/...
 # edit the spec, then:

@@ -14,8 +14,8 @@ pipeline {
     }
 
     environment {
-        // TODO: where the engine is installed from. Pin a tag so builds are reproducible.
-        UT_ENGINE = 'ut-engine[parallel] @ git+https://git.example.com/tools/unit_tester.git@v0.1.0'
+        // Where the engine is installed from. Pin a tag so builds are reproducible.
+        UT_ENGINE = 'ut-engine[parallel] @ git+https://github.com/TIE-Channel/unit_tester.git@v0.1.0'
     }
 
     options {
